@@ -22,10 +22,10 @@ public class SchurigTableTournamentScheduler implements ITournamentScheduler {
     private List<LocalDateTime> dates;
     private Integer matchCount;
 
-    Map<Integer, List<Match>> matchdays;
+    private Map<Integer, List<Match>> schedule;
     private IOutputStrategy outputStrategy;
 
-    /*protected*/public SchurigTableTournamentScheduler(@Nonnull List<String> teams, int laps, @Nullable List<LocalDateTime> dates) {
+    protected SchurigTableTournamentScheduler(@Nonnull List<String> teams, int laps, @Nullable List<LocalDateTime> dates) {
         this.teams = teams;
         this.laps = laps;
         this.dates = dates;
@@ -43,7 +43,7 @@ public class SchurigTableTournamentScheduler implements ITournamentScheduler {
             throw new IllegalStateException("Incorrect amount of dates! Dates amount must be a multiple of matchday amount");
         }
 
-        matchdays = Maps.newHashMap();
+        schedule = Maps.newHashMap();
         String lastTeamIfEven = (teams.size() & 1) == 0 ? teams.get(teams.size() - 1) : null;
         Queue<String> homeTeams = Queues.newLinkedBlockingQueue(teams);
         if (lastTeamIfEven != null) {
@@ -64,7 +64,7 @@ public class SchurigTableTournamentScheduler implements ITournamentScheduler {
         for(int i = 1; i < matchCount; ++i) {
             matchday.add(createMatch(pollAndAdd(homeTeams), pollAndAdd(awayTeams)));
         }
-        matchdays.put(matchdayNumber, matchday);
+        schedule.put(matchdayNumber, matchday);
     }
 
     private Match createMatch(String home, String away) {
@@ -97,13 +97,13 @@ public class SchurigTableTournamentScheduler implements ITournamentScheduler {
 
     @Override
     public int getMatchdayCount() {
-        return matchdays.size();
+        return schedule.size();
     }
 
     @Override
     public int getMatchesCount() {
         if(this.matchCount == null) {
-            this.matchCount = this.matchdays.values().stream()
+            this.matchCount = this.schedule.values().stream()
                     .flatMap(List::stream)
                     .map(match -> 1)
                     .reduce(Integer::sum)
@@ -114,7 +114,7 @@ public class SchurigTableTournamentScheduler implements ITournamentScheduler {
 
     @Override
     public List<Match> getMatchday(int matchday) {
-        return matchdays.get(matchday);
+        return schedule.get(matchday);
     }
 
     @Override
@@ -130,7 +130,7 @@ public class SchurigTableTournamentScheduler implements ITournamentScheduler {
     @Override
     public void output() {
         if(this.outputStrategy != null) {
-            this.outputStrategy.output(this.matchdays);
+            this.outputStrategy.output(this.schedule);
         }
     }
 
